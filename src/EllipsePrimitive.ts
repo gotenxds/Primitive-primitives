@@ -1,0 +1,311 @@
+export class EllipsePrimitive {
+	private _center: any;
+	private _semiMajor: number;
+	private _semiMinor: number;
+	private _rotation: number;
+	private _show: boolean;
+	private _border: boolean;
+	private _fill: boolean;
+	private _modelMatrix: any;
+	private _renderState;
+	private _borderDrawCommand;
+	private _drawCommand;
+	private _points;
+	private _borderIndicesArray;
+	private _indicesArray;
+	private _boundingVolume;
+	private _dirty = true;
+	private _lastMode;
+	private _color;
+	private _borderColor;
+	private _borderVertexArray;
+	private _vertexArray;
+	private _shaderProgram;
+
+	constructor(options: {center: any, semiMajorAxis: number, semiMinorAxis: number, rotation?: number, border?: boolean, fill?: boolean, show?: boolean, color?: number[], borderColor?: number[]}) {
+		this._center = Cesium.Cartesian3.clone(options.center);
+		this._semiMajor = options.semiMajorAxis;
+		this._semiMinor = options.semiMinorAxis;
+		this._rotation = options.rotation || 0;
+		this._show = Cesium.defaultValue(options.show, true);
+		this._border = Cesium.defaultValue(options.border, true);
+		this._fill = Cesium.defaultValue(options.fill, true);
+		this._color = options.color || [0.0, 0.0, 0.0, 1.0];
+		this._borderColor = options.borderColor || [0.0, 0.0, 0.0, 1.0];
+
+		this._modelMatrix = Cesium.Matrix4.clone(Cesium.Matrix4.IDENTITY);
+		this._borderDrawCommand = new Cesium.DrawCommand({owner: this});
+		this._drawCommand = new Cesium.DrawCommand({owner: this});
+
+		this.calculatePoints();
+	}
+
+	get center(): any {
+		return this._center;
+	}
+
+	set center(value: any) {
+		if (this._center !== value) {
+			this._center = value;
+			this._dirty = true;
+		}
+	}
+
+	private set points(value) {
+		if (!this._borderIndicesArray || (this._points && this._points.outerPositions && this._points.outerPositions.length !== value.outerPositions.length)) {
+			this._borderIndicesArray = EllipsePrimitive.createBorderIndicesArray(value.outerPositions.length / 3);
+		}
+
+		if (!this._indicesArray || (this._points && this._points.positions && this._points.positions.length !== value.positions.length)) {
+			this._indicesArray = EllipsePrimitive.createIndicesArray(value.innerPoints.length / 3);
+		}
+
+		this._points = value;
+	}
+
+	updateLocationData(data: {center?, semiMajorAxis?: number, semiMinorAxis?: number, rotation?: number}) {
+		this.center = data.center || this._center;
+
+		this.calculatePoints();
+
+		this.createBoundingVolume();
+	}
+
+	update(frameState) {
+		if (!this.shouldRender()) {
+			return;
+		}
+
+		if (frameState.mode !== this._lastMode) {
+			this._dirty = true;
+		}
+
+		let context = frameState.context;
+
+		this.setupRenderState();
+		this.setupShaderProgram(context);
+
+		if (this._border) {
+			this._borderVertexArray = (this._dirty || !this._borderVertexArray) ? this.createBorderVertexArray(context, frameState) : this._borderVertexArray;
+			this.setupDrawCommand(this._borderDrawCommand, this._borderVertexArray, Cesium.PrimitiveType.LINE_LOOP);
+			frameState.commandList.push(this._borderDrawCommand);
+		}
+
+		if (this._fill) {
+			this._vertexArray = (this._dirty || !this._vertexArray) ? this.createVertexArray(context, frameState) : this._vertexArray;
+			this.setupDrawCommand(this._drawCommand, this._vertexArray, Cesium.PrimitiveType.TRIANGLE_FAN);
+			frameState.commandList.push(this._drawCommand);
+		}
+
+		this._dirty = false;
+		this._lastMode = frameState.mode;
+	}
+
+	destroy() {
+		this._shaderProgram.destroy();
+		this._vertexArray.destroy();
+		this._borderVertexArray.destroy();
+	}
+
+	private sceneModeChanged(mode: number) {
+		return this._lastMode !== mode;
+	}
+
+	private shouldRender() {
+		return this._show && (this._fill || this._border);
+	}
+
+	private createBorderVertexArray(context: any, frameState) {
+		let points = frameState.mode === Cesium.SceneMode.SCENE_3D ? this._points.outerPositions : EllipsePrimitive.to2D(frameState, this._points.outerPositions);
+
+		let vertexBuffer = Cesium.Buffer.createVertexBuffer({
+			context: context,
+			typedArray: new Float32Array(points),
+			usage: Cesium.BufferUsage.STATIC_DRAW
+		});
+
+		let attributes = [
+			{
+				index: 0,
+				enabled: true,
+				vertexBuffer: vertexBuffer,
+				componentsPerAttribute: 3,
+				componentDatatype: Cesium.ComponentDatatype.FLOAT,
+				normalize: false,
+				offsetInBytes: 0,
+				strideInBytes: 0
+			},
+			{
+				index: 1,
+				enabled: true,
+				value: this._borderColor,
+				componentsPerAttribute: 4,
+				componentDatatype: Cesium.ComponentDatatype.FLOAT,
+				normalize: false,
+				offsetInBytes: 0,
+				strideInBytes: 0
+			}
+		];
+
+		return new Cesium.VertexArray({
+			context: context,
+			attributes: attributes,
+			indexBuffer: this.createBorderIndexBuffer(context)
+		});
+	}
+
+	private createVertexArray(context: any, frameState) {
+		let points = frameState.mode === Cesium.SceneMode.SCENE_3D ? this._points.innerPoints : EllipsePrimitive.to2D(frameState, this._points.innerPoints);
+
+		let vertexBuffer = Cesium.Buffer.createVertexBuffer({
+			context: context,
+			typedArray: new Float32Array(points),
+			usage: Cesium.BufferUsage.STATIC_DRAW
+		});
+
+		let attributes = [
+			{
+				index: 0,
+				enabled: true,
+				vertexBuffer: vertexBuffer,
+				componentsPerAttribute: 3,
+				componentDatatype: Cesium.ComponentDatatype.FLOAT,
+				normalize: false,
+				offsetInBytes: 0,
+				strideInBytes: 0
+			},
+			{
+				index: 1,
+				enabled: true,
+				value: this._color,
+				componentsPerAttribute: 4,
+				componentDatatype: Cesium.ComponentDatatype.FLOAT,
+				normalize: false,
+				offsetInBytes: 0,
+				strideInBytes: 0
+			}
+		];
+
+		return new Cesium.VertexArray({
+			context: context,
+			attributes: attributes,
+			indexBuffer: this.createIndexBuffer(context)
+		});
+	}
+
+	private setupShaderProgram(context: any) {
+		this._shaderProgram = this._shaderProgram || Cesium.ShaderProgram.replaceCache({
+				context: context,
+				shaderProgram: this._shaderProgram,
+				vertexShaderSource: `
+                attribute vec3 position;    
+                attribute vec4 color;
+                varying vec4 v_color;
+
+				void main() {
+				    gl_Position = czm_modelViewProjection * vec4(position, 1.0);
+				    v_color = color;
+				}`,
+				fragmentShaderSource: `
+				varying vec4 v_color;
+				void main()
+				{
+				    gl_FragColor = v_color;
+				}`
+			});
+	}
+
+	private setupRenderState() {
+		this._renderState = Cesium.RenderState.fromCache({
+			cull: {
+				enabled: true,
+				face: Cesium.CullFace.BACK
+			},
+			depthTest: {
+				enabled: false
+			},
+			depthMask: true,
+			blending: undefined
+		});
+	}
+
+	private setupDrawCommand(drawCommand, vertexArray, primitiveType, debugShowBoundingVolume: boolean = false) {
+		drawCommand.modelMatrix = this._modelMatrix;
+		drawCommand.renderState = this._renderState;
+		drawCommand.shaderProgram = this._shaderProgram;
+		drawCommand.boundingVolume = this._boundingVolume;
+		drawCommand.pass = Cesium.Pass.OPAQUE;
+
+		drawCommand.debugShowBoundingVolume = debugShowBoundingVolume;
+		drawCommand.primitiveType = primitiveType;
+		drawCommand.vertexArray = vertexArray;
+	}
+
+	private calculatePoints() {
+		let points = Cesium.EllipseGeometryLibrary.computeEllipsePositions({
+			center: this._center,
+			rotation: this._rotation,
+			semiMajorAxis: this._semiMajor,
+			semiMinorAxis: this._semiMinor,
+			granularity: 0.03
+		}, false, true);
+
+		points.innerPoints = Cesium.Cartesian3.pack(this._center, []).concat(points.outerPositions);
+
+		this.points = points;
+	}
+
+	private createBorderIndexBuffer(context) {
+		return Cesium.Buffer.createIndexBuffer({
+			context: context,
+			typedArray: this._borderIndicesArray,
+			usage: Cesium.BufferUsage.STATIC_DRAW,
+			indexDatatype: Cesium.IndexDatatype.UNSIGNED_SHORT
+		});
+	}
+
+	private createBoundingVolume() {
+		this._boundingVolume = new Cesium.BoundingSphere(this._center, this._semiMajor);
+	}
+
+	private createIndexBuffer(context: any) {
+		return Cesium.Buffer.createIndexBuffer({
+			context: context,
+			typedArray: new Uint16Array(this._indicesArray),
+			usage: Cesium.BufferUsage.STATIC_DRAW,
+			indexDatatype: Cesium.IndexDatatype.UNSIGNED_SHORT
+		});
+	}
+
+	private static createBorderIndicesArray(size: number) {
+		let indicesArray = [];
+
+		for (let i = 0; i < size; i++) {
+			indicesArray.push(i);
+		}
+
+		return new Uint16Array(indicesArray);
+	}
+
+	private static createIndicesArray(length) {
+		let indices = [];
+
+		for (let i = 2; i < length; i++) {
+			indices.push(0, i - 1, i);
+		}
+
+		indices.push(0, length - 1, 1);
+
+		return indices;
+	}
+
+	private static to2D(frameState, points) {
+		let unpacked = [];
+		let repacked = [];
+
+		Cesium.Cartesian3.unpackArray(points, unpacked);
+		Cesium.Cartesian3.packArray(unpacked.map(p => Cesium.SceneTransforms.computeActualWgs84Position(frameState, p)), repacked);
+
+		return repacked;
+	}
+}
