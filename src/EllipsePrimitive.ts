@@ -1,5 +1,8 @@
 declare var Cesium;
 
+let defaultVs = require('./shaders/default.vs.glsl');
+let defaultFs = require('./shaders/default.fs.glsl');
+
 export class EllipsePrimitive {
 	private _center: any;
 	private _semiMajor: number;
@@ -239,21 +242,8 @@ export class EllipsePrimitive {
 		this._shaderProgram = this._shaderProgram || Cesium.ShaderProgram.replaceCache({
 				context: context,
 				shaderProgram: this._shaderProgram,
-				vertexShaderSource: `
-                attribute vec3 position;    
-                attribute vec4 color;
-                varying vec4 v_color;
-
-				void main() {
-				    gl_Position = czm_modelViewProjection * vec4(position, 1.0);
-				    v_color = color;
-				}`,
-				fragmentShaderSource: `
-				varying vec4 v_color;
-				void main()
-				{
-				    gl_FragColor = v_color;
-				}`
+				vertexShaderSource: defaultVs,
+				fragmentShaderSource: defaultFs
 			});
 	}
 
