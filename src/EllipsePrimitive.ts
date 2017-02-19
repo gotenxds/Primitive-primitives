@@ -1,5 +1,7 @@
 declare var Cesium;
 
+import { createSimpleIndicesArray, to2D } from './Util';
+
 let defaultVs = require('./shaders/default.vs.glsl');
 let defaultFs = require('./shaders/default.fs.glsl');
 
@@ -161,7 +163,7 @@ export class EllipsePrimitive {
 	}
 
 	private createBorderVertexArray(context: any, frameState) {
-		let points = frameState.mode === Cesium.SceneMode.SCENE_3D ? this._points.outerPositions : EllipsePrimitive.to2D(frameState, this._points.outerPositions);
+		let points = frameState.mode === Cesium.SceneMode.SCENE_3D ? this._points.outerPositions : to2D(frameState, this._points.outerPositions);
 
 		let vertexBuffer = Cesium.Buffer.createVertexBuffer({
 			context: context,
@@ -200,7 +202,7 @@ export class EllipsePrimitive {
 	}
 
 	private createVertexArray(context: any, frameState) {
-		let points = frameState.mode === Cesium.SceneMode.SCENE_3D ? this._points.innerPoints : EllipsePrimitive.to2D(frameState, this._points.innerPoints);
+		let points = frameState.mode === Cesium.SceneMode.SCENE_3D ? this._points.innerPoints : to2D(frameState, this._points.innerPoints);
 
 		let vertexBuffer = Cesium.Buffer.createVertexBuffer({
 			context: context,
@@ -310,13 +312,7 @@ export class EllipsePrimitive {
 	}
 
 	private static createBorderIndicesArray(size: number): Uint16Array {
-		let indicesArray = [];
-
-		for (let i = 0; i < size; i++) {
-			indicesArray.push(i);
-		}
-
-		return new Uint16Array(indicesArray);
+		return createSimpleIndicesArray(size);
 	}
 
 	private static createIndicesArray(length) {
@@ -329,15 +325,5 @@ export class EllipsePrimitive {
 		indices.push(0, length - 1, 1);
 
 		return indices;
-	}
-
-	private static to2D(frameState, points) {
-		let unpacked = [];
-		let repacked = [];
-
-		Cesium.Cartesian3.unpackArray(points, unpacked);
-		Cesium.Cartesian3.packArray(unpacked.map(p => Cesium.SceneTransforms.computeActualWgs84Position(frameState, p)), repacked);
-
-		return repacked;
 	}
 }
