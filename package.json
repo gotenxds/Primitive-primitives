@@ -1,6 +1,6 @@
 {
   "name": "primitive-primitives",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A small library providing simple yet fast implemintations of primitives for CesiumJS",
   "main": "dist/main.js",
   "typings": "dist/main.d.ts",
