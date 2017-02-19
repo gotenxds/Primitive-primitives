@@ -1,26 +1,28 @@
+declare var Cesium;
+
 export class EllipsePrimitive {
 	private _center: any;
 	private _semiMajor: number;
 	private _semiMinor: number;
 	private _rotation: number;
 	private _show: boolean;
-	private _border: boolean;
-	private _fill: boolean;
+	private _showBorder: boolean;
+	private _showFill: boolean;
 	private _modelMatrix: any;
-	private _renderState;
-	private _borderDrawCommand;
-	private _drawCommand;
-	private _points;
-	private _borderIndicesArray;
-	private _indicesArray;
-	private _boundingVolume;
-	private _dirty = true;
-	private _lastMode;
-	private _color;
-	private _borderColor;
-	private _borderVertexArray;
-	private _vertexArray;
-	private _shaderProgram;
+	private _renderState: any;
+	private _borderDrawCommand: any;
+	private _drawCommand: any;
+	private _points: any;
+	private _borderIndicesArray: Uint16Array;
+	private _indicesArray: number[];
+	private _boundingVolume: any;
+	private _dirty: boolean = true;
+	private _lastMode: any;
+	private _color: number[];
+	private _borderColor: number[];
+	private _borderVertexArray: any;
+	private _vertexArray: any;
+	private _shaderProgram: any;
 
 	constructor(options: {center: any, semiMajorAxis: number, semiMinorAxis: number, rotation?: number, border?: boolean, fill?: boolean, show?: boolean, color?: number[], borderColor?: number[]}) {
 		this._center = Cesium.Cartesian3.clone(options.center);
@@ -28,8 +30,8 @@ export class EllipsePrimitive {
 		this._semiMinor = options.semiMinorAxis;
 		this._rotation = options.rotation || 0;
 		this._show = Cesium.defaultValue(options.show, true);
-		this._border = Cesium.defaultValue(options.border, true);
-		this._fill = Cesium.defaultValue(options.fill, true);
+		this._showBorder = Cesium.defaultValue(options.border, true);
+		this._showFill = Cesium.defaultValue(options.fill, true);
 		this._color = options.color || [0.0, 0.0, 0.0, 1.0];
 		this._borderColor = options.borderColor || [0.0, 0.0, 0.0, 1.0];
 
@@ -49,6 +51,50 @@ export class EllipsePrimitive {
 			this._center = value;
 			this._dirty = true;
 		}
+	}
+
+	get color(): number[] {
+		return this._color;
+	}
+
+	set color(value: number[]) {
+		this._color = value;
+
+		this._dirty = true;
+	}
+
+	get borderColor(): number[] {
+		return this._borderColor;
+	}
+
+	set borderColor(value: number[]) {
+		this._borderColor = value;
+
+		this._dirty = true;
+	}
+
+	get show(): boolean {
+		return this._show;
+	}
+
+	set show(value: boolean) {
+		this._show = value;
+	}
+
+	get showBorder(): boolean {
+		return this._showBorder;
+	}
+
+	set showBorder(value: boolean) {
+		this._showBorder = value;
+	}
+
+	get showFill(): boolean {
+		return this._showFill;
+	}
+
+	set showFill(value: boolean) {
+		this._showFill = value;
 	}
 
 	private set points(value) {
@@ -85,13 +131,13 @@ export class EllipsePrimitive {
 		this.setupRenderState();
 		this.setupShaderProgram(context);
 
-		if (this._border) {
+		if (this._showBorder) {
 			this._borderVertexArray = (this._dirty || !this._borderVertexArray) ? this.createBorderVertexArray(context, frameState) : this._borderVertexArray;
 			this.setupDrawCommand(this._borderDrawCommand, this._borderVertexArray, Cesium.PrimitiveType.LINE_LOOP);
 			frameState.commandList.push(this._borderDrawCommand);
 		}
 
-		if (this._fill) {
+		if (this._showFill) {
 			this._vertexArray = (this._dirty || !this._vertexArray) ? this.createVertexArray(context, frameState) : this._vertexArray;
 			this.setupDrawCommand(this._drawCommand, this._vertexArray, Cesium.PrimitiveType.TRIANGLE_FAN);
 			frameState.commandList.push(this._drawCommand);
@@ -107,12 +153,8 @@ export class EllipsePrimitive {
 		this._borderVertexArray.destroy();
 	}
 
-	private sceneModeChanged(mode: number) {
-		return this._lastMode !== mode;
-	}
-
 	private shouldRender() {
-		return this._show && (this._fill || this._border);
+		return this._show && (this._showFill || this._showBorder);
 	}
 
 	private createBorderVertexArray(context: any, frameState) {
@@ -277,7 +319,7 @@ export class EllipsePrimitive {
 		});
 	}
 
-	private static createBorderIndicesArray(size: number) {
+	private static createBorderIndicesArray(size: number) :Uint16Array{
 		let indicesArray = [];
 
 		for (let i = 0; i < size; i++) {
