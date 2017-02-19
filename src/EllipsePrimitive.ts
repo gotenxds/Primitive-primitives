@@ -319,7 +319,7 @@ export class EllipsePrimitive {
 		});
 	}
 
-	private static createBorderIndicesArray(size: number) :Uint16Array{
+	private static createBorderIndicesArray(size: number): Uint16Array {
 		let indicesArray = [];
 
 		for (let i = 0; i < size; i++) {
