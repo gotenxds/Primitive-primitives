@@ -150,7 +150,10 @@ var webpack_opts = {
 	},
 	module: {
 		preLoaders: [{ test: /\.ts$/, loaders: ['tslint'] }],
-		loaders: [{ test: /\.ts$/, loaders: ['babel-loader', 'awesome-typescript-loader'] }]
+		loaders: [{ test: /\.ts$/, loaders: ['babel-loader', 'awesome-typescript-loader'] }, {
+            test: /\.glsl$/,
+            loader: 'raw-loader'
+        }]
 	},
 	externals: [nodeExternals()],
 	plugins: [
