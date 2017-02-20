@@ -1,3 +1,4 @@
+import { UpdateablePrimitive } from './UpdateablePrimitive';
 declare var Cesium;
 
 import { createSimpleIndicesArray, to2D } from './Util';
@@ -5,11 +6,12 @@ import { createSimpleIndicesArray, to2D } from './Util';
 let defaultVs = require('./shaders/default.vs.glsl');
 let defaultFs = require('./shaders/default.fs.glsl');
 
-export class EllipsePrimitive {
+export class EllipsePrimitive implements UpdateablePrimitive{
 	private _center: any;
 	private _semiMajor: number;
 	private _semiMinor: number;
 	private _rotation: number;
+	private _granularity: number;
 	private _show: boolean;
 	private _showBorder: boolean;
 	private _showFill: boolean;
@@ -29,7 +31,7 @@ export class EllipsePrimitive {
 	private _vertexArray: any;
 	private _shaderProgram: any;
 
-	constructor(options: {center: any, semiMajorAxis: number, semiMinorAxis: number, rotation?: number, border?: boolean, fill?: boolean, show?: boolean, color?: number[], borderColor?: number[]}) {
+	constructor(options: {center: any, semiMajorAxis: number, semiMinorAxis: number, rotation?: number, border?: boolean, fill?: boolean, show?: boolean, color?: number[], borderColor?: number[], granularity?: number}) {
 		this._center = Cesium.Cartesian3.clone(options.center);
 		this._semiMajor = options.semiMajorAxis;
 		this._semiMinor = options.semiMinorAxis;
@@ -39,6 +41,7 @@ export class EllipsePrimitive {
 		this._showFill = Cesium.defaultValue(options.fill, true);
 		this._color = options.color || [0.0, 0.0, 0.0, 1.0];
 		this._borderColor = options.borderColor || [0.0, 0.0, 0.0, 1.0];
+		this._granularity = options.granularity || 0.3;
 
 		this._modelMatrix = Cesium.Matrix4.clone(Cesium.Matrix4.IDENTITY);
 		this._borderDrawCommand = new Cesium.DrawCommand({owner: this});
@@ -281,7 +284,7 @@ export class EllipsePrimitive {
 			rotation: this._rotation,
 			semiMajorAxis: this._semiMajor,
 			semiMinorAxis: this._semiMinor,
-			granularity: 0.03
+			granularity: this._granularity
 		}, false, true);
 
 		points.innerPoints = Cesium.Cartesian3.pack(this._center, []).concat(points.outerPositions);
