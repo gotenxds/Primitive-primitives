@@ -1,6 +1,9 @@
 import { isTranslucent } from './Util';
 declare var Cesium;
 
+/**
+ * This is the default implementation of a primitive, all primitives extend this class.
+ */
 export abstract class Primitive{
 	protected _show:boolean;
 	protected _modelMatrix: any;

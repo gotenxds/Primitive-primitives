@@ -7,6 +7,11 @@ import { Primitive } from './Primitive';
 let defaultVs = require('./shaders/default.vs.glsl');
 let defaultFs = require('./shaders/default.fs.glsl');
 
+/**
+ * EllipsePrimitive is implemented to be as minimal as possible.
+ * Both border and fill are ON by default and you will need to disable them.
+ * Both color and border color are just an array of 4 floats from 0 to 1 in the RGBA format, currently we do not support materials.
+ */
 export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
 	private _center: any;
 	private _semiMajor: number;
@@ -20,6 +25,18 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
 	private _borderColor: number[];
 	private _borderVertexArray: any;
 
+	/**
+	 * The ellipse constructor requires an ellipse center point a semiMinor and semiMajor, these are used to calculate the ellipses position and thus mandatory.
+	 * @param options The ellipses options.
+	 * @param options.center The ellipses center point in 3D space.
+	 * @param options.semiMajorAxis The ellipses big radius.
+	 * @param options.semiMinorAxis The ellipses small radius.
+	 * @param options.rotation The ellipses rotation, defaults to 0.
+	 * @param options.border Defines whether we should render the border, defaults to true.
+	 * @param options.fill Defines whether we should render the fill, defaults to true.
+	 * @param options.show Defines whether we should render the ellipse, defaults to true.
+	 * @param options.granularity The angular distance between points on the ellipse in radians, smaller values for smooter ellipses, bigger values for better performence, defaults to 0.3.
+	 */
 	constructor(options: {center: any, semiMajorAxis: number, semiMinorAxis: number, rotation?: number, border?: boolean, fill?: boolean, show?: boolean, color?: number[], borderColor?: number[], granularity?: number}) {
 		super(options);
 		this._center = Cesium.Cartesian3.clone(options.center);
@@ -36,10 +53,16 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
 		this.calculatePoints();
 	}
 
+	/**
+	 * @returns {Cesium.Cartesian3} - Cesium.Cartesian3
+	 */
 	get center(): any {
 		return this._center;
 	}
 
+	/**
+	 * @param value a Cesium.Cartesian3 value.
+	 */
 	set center(value: any) {
 		if (this._center !== value) {
 			this._center = value;
@@ -103,6 +126,11 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
 		this._points = value;
 	}
 
+	/**
+	 * This will update the location of the ellipse for the next render, If any parameter is not defined in the data param it will default to the allready defined value.
+	 *
+	 * @param data
+	 */
 	updateLocationData(data: {center?, semiMajorAxis?: number, semiMinorAxis?: number, rotation?: number}) {
 		this.center = data.center || this._center;
 
@@ -111,6 +139,10 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
 		this.createBoundingVolume();
 	}
 
+	/**
+	 * This is a Cesium only function it is called once each tick of the render engine, do NOT call it!
+	 * @param frameState
+	 */
 	update(frameState) {
 		if (!this.shouldRender()) {
 			return;
@@ -141,6 +173,9 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
 		this._lastMode = frameState.mode;
 	}
 
+	/**
+	 * This is a cesium only function, cesium calles it when the user removes the primitive from a primitive collection.
+	 */
 	destroy() {
 		this._shaderProgram.destroy();
 		this._vertexArray.destroy();
