@@ -148,6 +148,7 @@ var webpack_opts = {
 			'src',
 		]
 	},
+    devtool: 'source-map',
 	module: {
 		preLoaders: [{ test: /\.ts$/, loaders: ['tslint'] }],
 		loaders: [{ test: /\.ts$/, loaders: ['babel-loader', 'awesome-typescript-loader'] }, {
@@ -157,7 +158,7 @@ var webpack_opts = {
 	},
 	externals: [nodeExternals()],
 	plugins: [
-		new webpack.optimize.UglifyJsPlugin(),
+		new webpack.optimize.UglifyJsPlugin({ minimize: true, sourceMap: true }),
 		new webpack.ProgressPlugin(percentage_handler)
 	],
 	tslint: {
@@ -173,6 +174,7 @@ var create_browser_version = function (inputJs) {
 
 	let b = browserify(inputJs, {
 		standalone: bundle_opts.name,
+		debug: true
 	});
 
 	b.bundle(function(err, src) {
