@@ -248,7 +248,7 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
 				enabled: false
 			},
 			depthMask: true,
-			blending: {enabled:true}
+			blending: this.isTranslucent() || isTranslucent(this._borderColor) ? {enabled:true} : undefined
 		});
 	}
 
