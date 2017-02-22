@@ -19,3 +19,7 @@ export function createSimpleIndicesArray(size: number): Uint16Array {
 
 	return new Uint16Array(indicesArray);
 }
+
+export function isTranslucent(color:number[]){
+	return color[3] < 1.0;
+}
