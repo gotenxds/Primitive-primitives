@@ -18,6 +18,7 @@
     "coverage": "npm test -- --coverage --no-cache",
     "coverage:watch": "npm run coverage -- --watch",
     "prerelease": "npm run build && npm test",
+    "docs": "npm run typedoc --out docs ./src --excludePrivate",
     "release": "standard-version && npm pack"
   },
   "repository": {
