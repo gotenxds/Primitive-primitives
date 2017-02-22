@@ -2,7 +2,7 @@
 !src/
 !src/**/*
 !docs/
-!docs/**/
+!docs/**/*
 !*.js
 !*.json
 !*.md
