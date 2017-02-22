@@ -1,6 +1,8 @@
 *
 !src/
 !src/**/*
+!docs/
+!docs/**/
 !*.js
 !*.json
 !*.md
