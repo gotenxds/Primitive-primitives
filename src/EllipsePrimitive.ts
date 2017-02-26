@@ -12,18 +12,23 @@ let defaultFs = require('./shaders/default.fs.glsl');
  * Both border and fill are ON by default and you will need to disable them.
  * Both color and border color are just an array of 4 floats from 0 to 1 in the RGBA format, currently we do not support materials.
  */
-export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
+export class EllipsePrimitive extends Primitive implements UpdateablePrimitive {
 	private _center: any;
 	private _semiMajor: number;
 	private _semiMinor: number;
 	private _rotation: number;
 	private _granularity: number;
-	private _showBorder: boolean;
+	private _border: {show: boolean, style: string};
 	private _showFill: boolean;
 	private _borderDrawCommand: any;
 	private _borderIndicesArray: Uint16Array;
 	private _borderColor: number[];
 	private _borderVertexArray: any;
+
+	private static borderStyleToPrimitiveType = {
+		solid: Cesium.PrimitiveType.LINE_LOOP,
+		dashed: Cesium.PrimitiveType.LINES
+	};
 
 	/**
 	 * The ellipse constructor requires an ellipse center point a semiMinor and semiMajor, these are used to calculate the ellipses position and thus mandatory.
@@ -32,18 +37,18 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
 	 * @param options.semiMajorAxis The ellipses big radius.
 	 * @param options.semiMinorAxis The ellipses small radius.
 	 * @param options.rotation The ellipses rotation, defaults to 0.
-	 * @param options.border Defines whether we should render the border, defaults to true.
+	 * @param options.border an Object containing show:a boolean and style: a string that indicates the border style(solid/dashed) default: {show:true, style:solid}
 	 * @param options.fill Defines whether we should render the fill, defaults to true.
 	 * @param options.show Defines whether we should render the ellipse, defaults to true.
 	 * @param options.granularity The angular distance between points on the ellipse in radians, smaller values for smooter ellipses, bigger values for better performence, defaults to 0.3.
 	 */
-	constructor(options: {center: any, semiMajorAxis: number, semiMinorAxis: number, rotation?: number, border?: boolean, fill?: boolean, show?: boolean, color?: number[], borderColor?: number[], granularity?: number}) {
+	constructor(options: {center: any, semiMajorAxis: number, semiMinorAxis: number, rotation?: number, border?: {show: boolean, style: string}, fill?: boolean, show?: boolean, color?: number[], borderColor?: number[], granularity?: number}) {
 		super(options);
 		this._center = Cesium.Cartesian3.clone(options.center);
 		this._semiMajor = options.semiMajorAxis;
 		this._semiMinor = options.semiMinorAxis;
 		this._rotation = options.rotation || 0;
-		this._showBorder = Cesium.defaultValue(options.border, true);
+		this._border = Cesium.defaultValue(options.border, {show: true, style: 'solid'});
 		this._showFill = Cesium.defaultValue(options.fill, true);
 		this._borderColor = options.borderColor || [0.0, 0.0, 0.0, 1.0];
 		this._granularity = options.granularity || 0.3;
@@ -98,12 +103,12 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
 		this._show = value;
 	}
 
-	get showBorder(): boolean {
-		return this._showBorder;
+	get border(): {show: boolean, style: string} {
+		return this._border;
 	}
 
-	set showBorder(value: boolean) {
-		this._showBorder = value;
+	set border(value: {show: boolean, style: string}) {
+		this._border = value;
 	}
 
 	get showFill(): boolean {
@@ -157,9 +162,10 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
 		this.setupRenderState();
 		this.setupShaderProgram(context);
 
-		if (this._showBorder) {
+		if (this._border) {
 			this._borderVertexArray = (this._dirty || !this._borderVertexArray) ? this.createBorderVertexArray(context, frameState) : this._borderVertexArray;
-			this.setupDrawCommand(this._borderDrawCommand, this._borderVertexArray, Cesium.PrimitiveType.LINE_LOOP, isTranslucent(this._borderColor));
+			this.setupDrawCommand(this._borderDrawCommand, this._borderVertexArray,
+								  EllipsePrimitive.borderStyleToPrimitiveType[this._border.style], isTranslucent(this._borderColor));
 			frameState.commandList.push(this._borderDrawCommand);
 		}
 
@@ -182,8 +188,8 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
 		this._borderVertexArray.destroy();
 	}
 
-	protected shouldRender() {
-		return super.shouldRender() && (this._showFill || this._showBorder);
+	protected shouldRender(): boolean {
+		return super.shouldRender() && (this._showFill || this._border.show);
 	}
 
 	private createBorderVertexArray(context: any, frameState) {
@@ -283,7 +289,7 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive{
 				enabled: false
 			},
 			depthMask: true,
-			blending: this.isTranslucent() || isTranslucent(this._borderColor) ? {enabled:true} : undefined
+			blending: this.isTranslucent() || isTranslucent(this._borderColor) ? {enabled: true} : undefined
 		});
 	}
 
