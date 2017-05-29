@@ -138,6 +138,9 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive {
 	 */
 	updateLocationData(data: {center?, semiMajorAxis?: number, semiMinorAxis?: number, rotation?: number}) {
 		this.center = data.center || this._center;
+		this._semiMajor = data.semiMajorAxis || this._semiMajor;
+		this._semiMinor = data.semiMinorAxis || this._semiMinor;
+		this._rotation = data.rotation || this._rotation;
 
 		this.calculatePoints();
 
