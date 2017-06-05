@@ -7,6 +7,7 @@ import { Primitive } from './Primitive';
 let defaultVs = require('./shaders/default.vs.glsl');
 let defaultFs = require('./shaders/default.fs.glsl');
 
+
 /**
  * EllipsePrimitive is implemented to be as minimal as possible.
  * Both border and fill are ON by default and you will need to disable them.
@@ -75,6 +76,40 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive {
 		}
 	}
 
+
+	get semiMajor(): number {
+		return this._semiMajor;
+	}
+
+	set semiMajor(value: number) {
+		if (this._semiMajor !== value) {
+			this._semiMajor = value;
+			this._dirty = true;
+		}
+	}
+
+	get semiMinor(): number {
+		return this._semiMinor;
+	}
+
+	set semiMinor(value: number) {
+		if (this._semiMinor !== value) {
+			this._semiMinor = value;
+			this._dirty = true;
+		}
+	}
+
+	get rotation(): number {
+		return this._rotation;
+	}
+
+	set rotation(value: number) {
+		if (this._rotation !== value) {
+			this._rotation = value;
+			this._dirty = true;
+		}
+	}
+
 	get color(): number[] {
 		return this._color;
 	}
@@ -138,8 +173,8 @@ export class EllipsePrimitive extends Primitive implements UpdateablePrimitive {
 	 */
 	updateLocationData(data: {center?, semiMajorAxis?: number, semiMinorAxis?: number, rotation?: number}) {
 		this.center = data.center || this._center;
-		this._semiMajor = data.semiMajorAxis || this._semiMajor;
-		this._semiMinor = data.semiMinorAxis || this._semiMinor;
+		this.semiMajor = data.semiMajorAxis || this._semiMajor;
+		this.semiMinor = data.semiMinorAxis || this._semiMinor;
 		this._rotation = data.rotation || this._rotation;
 
 		this.calculatePoints();
