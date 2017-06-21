@@ -20,6 +20,15 @@ export function createSimpleIndicesArray(size: number): Uint16Array {
 	return new Uint16Array(indicesArray);
 }
 
+export function createSimpleIndexBuffer(context, indicesArray) {
+	return Cesium.Buffer.createIndexBuffer({
+		context: context,
+		typedArray: indicesArray,
+		usage: Cesium.BufferUsage.STATIC_DRAW,
+		indexDatatype: Cesium.IndexDatatype.UNSIGNED_SHORT
+	});
+}
+
 export function isTranslucent(color:number[]){
 	return color[3] < 1.0;
 }
